@@ -84,7 +84,7 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Dashboard improvements
 
-The interface uses a compact top navigation, neutral backgrounds, readable system typography, and a single blue accent. Results include a plain-language verdict and explain the comparison methods. The model tab explains decimals, training limits, and test error next to the output. Formulas and deeper assumptions stay in expandable sections.
+The interface uses a compact top navigation, neutral backgrounds, readable system typography, and a single blue accent. Results include a plain-language verdict and explain the comparison methods. The model tab explains decimals, training limits, and test error next to the output. Formulas and deeper assumptions stay in expandable sections. The interface adds short tab transitions, animated API result values, forecast bars, and schematic vehicle crossings triggered by recorded departures. Reduced-motion preferences disable decorative animation and automatic playback.
 
 The comparison chart shows all three policies. Export CSV downloads the selected experiment with its actual run number and all metrics. Camera rendering coalesces slow requests and reuses up to 64 visible queue states. Signal history records the phase active during that second, and peak queues are measured every second.
 
