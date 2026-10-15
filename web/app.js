@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);let data,model,index=0,playing=true,slideIndex=0;
 const names=['North','East','South','West'];
 const get = url => FlowStateAsync.requestJSON(url);
-function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>v.classList.toggle('active',v.dataset.view===name));$('breadcrumb').textContent=name==='dashboard'?'LIVE SIMULATION':name==='predict'?'TRY THE MODEL':name.toUpperCase();if(name==='presentation')renderSlide();}
+function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>{const active=v.dataset.view===name;v.classList.toggle('active',active);if(active)v.setAttribute('aria-current','page');else v.removeAttribute('aria-current')});$('breadcrumb').textContent=name==='dashboard'?'INTERSECTION OVERVIEW':name==='predict'?'TRY THE MODEL':name==='research'?'MODEL & METHODOLOGY':'PRESENTATION';window.scrollTo(0,0);if(name==='presentation')renderSlide();}
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>view(b.dataset.view));$('present').onclick=()=>view('presentation');
 function roundRect(c,x,y,w,h,r,color){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
 function drawJunction(h){const c=$('junction').getContext('2d');const W=760,H=460;c.clearRect(0,0,W,H);c.fillStyle='#e6ebdf';c.fillRect(0,0,W,H);
@@ -45,12 +45,32 @@ function updatePlayButton() {
   $('play').setAttribute('aria-label', playing ? 'Pause playback' : 'Resume playback');
 }
 function render(){if(!data)return;const h=data.smart.history[index];drawJunction(h);drawChart();$('timeline').value=index;const t=h.time;$('clock').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')} / 10:00`;$('lane-bars').innerHTML=names.map((name,i)=>`<div class="lane"><span>${name}</span><div class="bar"><i style="width:${Math.min(100,h.forecast[i]/8*100)}%"></i></div><b>${h.queues[i]} queued · ${h.forecast[i]} next</b></div>`).join('');vision(h)}
-function populate(){const s=data.smart.metrics,f=data.fixed.metrics;$('improvement').innerHTML=`${data.improvement}<small>%</small>`;$('delay').innerHTML=`${s.delay_per_arrival}<small> s</small>`;$('fixed-delay').textContent=`Fixed-time: ${f.delay_per_arrival}s per arrival`;$('served').innerHTML=`${s.served}<small> / ${s.arrivals}</small>`;$('remaining').textContent=`${s.remaining} still queued · fixed-time served ${f.served}`;$('experiment-context').textContent=`Completed experiment: ${data.scenario} · seed ${data.seed} · ${data.seconds}s. Forecast bars estimate arrivals in the next 10 seconds.`;$('export').disabled=false;$('results-table').innerHTML='<table><thead><tr><th>Policy</th><th>Delay/arrival</th><th>Served</th><th>Remaining</th></tr></thead><tbody>'+[['fixed','Fixed 25s'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';}
+function populate(){
+  const s=data.smart.metrics,f=data.fixed.metrics,r=data.reactive.metrics;
+  const change=Math.abs(data.improvement).toFixed(1);
+  const better=data.improvement>=0;
+  const difference=Math.abs(s.queue_seconds-f.queue_seconds);
+  const queueComparison=s.delay_per_arrival===r.delay_per_arrival?
+    `ML-assisted and queue-only each recorded ${s.delay_per_arrival.toFixed(2)}s of waiting per arrival.`:
+    `ML-assisted recorded ${s.delay_per_arrival.toFixed(2)}s of waiting per arrival versus ${r.delay_per_arrival.toFixed(2)}s for queue-only.`;
+  $('result-headline').textContent=better?`ML-assisted signals reduced total waiting by ${change}%`:`ML-assisted signals increased total waiting by ${change}%`;
+  $('result-explanation').textContent=`In this ${data.seconds/60}-minute ${scenarioLabel(data.scenario)} run, cars spent ${Math.round(difference/60)} ${better?'fewer':'more'} total vehicle-minutes waiting than with a fixed timer. ${queueComparison} One run does not prove it wins every time.`;
+  $('improvement').innerHTML=`${better?'−':'+'}${change}<small>%</small>`;
+  $('improvement-help').textContent=better?'Less total waiting than fixed-time':'More total waiting than fixed-time';
+  $('delay').innerHTML=`${s.delay_per_arrival}<small> s</small>`;
+  $('fixed-delay').textContent=`Fixed timer: ${f.delay_per_arrival}s per arrival`;
+  $('served').innerHTML=`${s.served}<small> / ${s.arrivals}</small>`;
+  $('remaining').textContent=`${s.remaining} still queued · fixed timer crossed ${f.served}`;
+  $('experiment-context').textContent=`Showing: ${scenarioLabel(data.scenario)} · seed ${data.seed} · ${data.seconds/60} minutes. The playback below shows the ML-assisted run.`;
+  $('export').disabled=false;
+  $('results-table').innerHTML='<table><thead><tr><th>Signal strategy</th><th>Wait per arrival</th><th>Cars crossed</th><th>Still queued</th></tr></thead><tbody>'+[['fixed','Fixed timer'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';
+}
+function scenarioLabel(key){return {rush:'morning rush',balanced:'balanced traffic',surge:'eastbound surge'}[key]||key}
 async function loadModel() {
   if (model) return;
   model = await get('/api/model');
   $('mae').innerHTML = `${model.mae.toFixed(2)}<small> veh</small>`;
-  $('model-details').innerHTML = `<table><tr><td>Algorithm</td><td>Random forest · ${model.n_estimators} trees · depth ≤ 8</td></tr><tr><td>Training / test windows</td><td>${model.training_samples} / ${model.test_samples}</td></tr><tr><td>Test MAE / RMSE</td><td>${model.mae.toFixed(3)} / ${model.rmse.toFixed(3)}</td></tr><tr><td>Persistence baseline MAE</td><td>${model.persistence_mae.toFixed(3)}</td></tr><tr><td>Moving-average baseline MAE</td><td>${model.moving_average_mae.toFixed(3)}</td></tr></table>`;
+  $('model-details').innerHTML = `<table><tr><td>Model</td><td>Random Forest · ${model.n_estimators} trees · maximum depth 8</td></tr><tr><td>Examples for learning / testing</td><td>${model.training_samples} / ${model.test_samples} · generated traffic</td></tr><tr><td>Average test error (MAE)</td><td>${model.mae.toFixed(2)} cars per 10-second prediction</td></tr><tr><td>Repeating the latest count</td><td>${model.persistence_mae.toFixed(2)} cars average error</td></tr><tr><td>Averaging three counts</td><td>${model.moving_average_mae.toFixed(2)} cars average error</td></tr></table><p class="caption">Lower average error is better. These simple comparison methods show whether training the model helped.</p><details class="technical-detail"><summary>More model statistics</summary><p>RMSE: ${model.rmse.toFixed(3)} cars. This measure puts extra weight on larger errors.</p></details>`;
 }
 async function run() {
   const button = $('run');
@@ -64,7 +84,7 @@ async function run() {
     const seedText = $('seed').value.trim();
     const seed = Number(seedText);
     if (!seedText || !Number.isInteger(seed) || seed < 0 || seed > 999999)
-      throw Error('Choose an integer seed between 0 and 999999.');
+      throw Error('Choose a whole run number between 0 and 999999.');
     const scenario = $('scenario').value;
     await loadModel();
     const result = await get(`/api/run?scenario=${scenario}&seed=${seed}`);
@@ -80,7 +100,7 @@ async function run() {
   } finally {
     updatePlayButton();
     button.disabled = false;
-    button.textContent = '↻ Run experiment';
+    button.textContent = '↻ Run comparison';
   }
 }
 $('run').onclick = run;
@@ -120,6 +140,14 @@ $('export').onclick = () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 const predictionInputs = ['count-recent','count-previous','count-oldest'];
+let predictionRequest=0;
+predictionInputs.forEach(id => $(id).addEventListener('input', () => {
+  predictionRequest++;
+  $('predict-submit').disabled=false;
+  $('predict-submit').textContent='Generate prediction →';
+  if ($('prediction-value').textContent.trim() !== '—')
+    $('prediction-status').textContent = 'Inputs changed. Generate a new prediction to update this result.';
+}));
 document.querySelectorAll('[data-counts]').forEach(button => {
   button.onclick = () => {
     button.dataset.counts.split(',').forEach((value,i) => { $(predictionInputs[i]).value = value; });
@@ -129,7 +157,6 @@ document.querySelectorAll('[data-counts]').forEach(button => {
 $('predict-form').onsubmit = async event => {
   event.preventDefault();
   const button = $('predict-submit');
-  if (button.disabled) return;
   const counts = predictionInputs.map(id => Number($(id).value));
   $('predict-error').textContent = '';
   if (predictionInputs.some(id => !$(id).value.trim()) || counts.some(n => !Number.isInteger(n) || n < 0 || n > 100)) {
@@ -138,18 +165,21 @@ $('predict-form').onsubmit = async event => {
   }
   button.disabled = true;
   button.textContent = 'Running the model…';
+  const request=++predictionRequest;
   try {
     const result = await get('/api/predict?counts=' + counts.join(','));
+    if(request!==predictionRequest)return;
     $('prediction-value').innerHTML = `${result.prediction.toFixed(2)}<small>vehicles</small>`;
     $('prediction-description').textContent = `About ${result.rounded_prediction} ${result.rounded_prediction===1?'arrival':'arrivals'} expected during the next ${result.horizon_seconds} seconds.`;
+    $('prediction-meaning').textContent = 'A decimal is normal: it is the average expectation from 60 trees, not a partial car.';
     $('prediction-note').textContent = result.note;
-    $('prediction-status').textContent = `Inputs (newest first): [${result.inputs.join(', ')}] · ${result.n_estimators} fitted trees · test MAE ${result.test_mae.toFixed(2)} vehicles.`;
+    $('prediction-status').textContent = `Result for ${result.inputs.join(' → ')} cars (newest to oldest). Average test error: ${result.test_mae.toFixed(2)} cars.`;
     const values = [...result.inputs.slice().reverse(),result.prediction];
     const labels = ['20–30s ago','10–20s ago','Last 10s','Next 10s'];
     const max = Math.max(1,...values);
     $('prediction-bars').innerHTML = values.map((value,i) => `<div class="prediction-row"><span>${labels[i]}</span><div><i style="width:${value/max*100}%"></i></div><b>${i===3?value.toFixed(2):value}</b></div>`).join('');
-  } catch (error) { $('predict-error').textContent = error.message; }
-  finally { button.disabled = false; button.textContent = 'Generate prediction →'; }
+  } catch (error) { if(request===predictionRequest)$('predict-error').textContent = error.message; }
+  finally { if(request===predictionRequest){button.disabled = false; button.textContent = 'Generate prediction →';} }
 };
 const slides=[
 ['Smarter signals. Less waiting.','Smart Traffic Signal Optimization Using Machine Learning and Computer Vision','Our goal: reduce accumulated waiting at a four-way intersection while responding to uneven traffic demand. This is an academic simulation prototype.'],

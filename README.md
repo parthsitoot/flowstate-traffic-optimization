@@ -41,9 +41,9 @@ Windows activation: `.venv\Scripts\activate`. If port 8000 is occupied, close th
 
 1. Read `docs/START_HERE.md` (the plain-language explanation).
 2. Read `docs/PRESENTATION_AND_VIVA.md` and rehearse the 5-minute script.
-3. Run the app; use Morning rush and seed 42.
-4. Show the digital twin, synthetic camera detection, and comparison chart.
-5. Open **Model & methodology**, then **Presentation mode**.
+3. Open the live demo or run the app; use Morning rush and run number 42.
+4. Read the result card, then show the digital twin, generated camera image, and comparison chart. Point out that this one run is slightly worse than queue-only on waiting per arrival.
+5. Open **Try the Model** and submit `[6, 6, 6]` to show a real 5.61-vehicle forecast. Open **Model & methodology**, then **Presentation mode**.
 6. Submit the source folder, `docs/REPORT.md`, and `artifacts/` results. The slides are embedded in the app; they are not a PowerPoint file.
 
 ## Project structure
@@ -84,7 +84,9 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Dashboard improvements
 
-The comparison chart shows all three policies. Export CSV downloads the selected experiment with its actual seed and all metrics. Camera rendering coalesces slow requests and reuses up to 64 visible queue states. Signal history records the phase active during that second, and peak queues are measured every second.
+The overview has a three-step guide, a plain-language verdict for each run, explanations alongside the metrics, and a chart labeled with the better direction. The model tab explains decimals, training limits, and test error next to the output. Technical formulas and deeper assumptions stay available in expandable sections. Switching tabs returns to the top so each explanation starts at its heading.
+
+The comparison chart shows all three policies. Export CSV downloads the selected experiment with its actual run number and all metrics. Camera rendering coalesces slow requests and reuses up to 64 visible queue states. Signal history records the phase active during that second, and peak queues are measured every second.
 
 ## Use your own input
 
