@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "model": "RandomForestRegressor",
+  "fitted_trees": 60,
+  "test_samples": 3300,
+  "heldout_mae_vehicles_per_10_seconds": {
+    "random_forest": 1.704131825299989,
+    "last_count_persistence": 2.0606060606060606,
+    "three_window_average": 1.7333333333333334,
+    "training_mean_constant": 2.197571594735231
+  },
+  "example_predictions": [
+    {
+      "recent_10s_counts_newest_first": [
+        0,
+        0,
+        0
+      ],
+      "predicted_next_10s_arrivals": 0.544
+    },
+    {
+      "recent_10s_counts_newest_first": [
+        1,
+        1,
+        1
+      ],
+      "predicted_next_10s_arrivals": 1.237
+    },
+    {
+      "recent_10s_counts_newest_first": [
+        3,
+        3,
+        3
+      ],
+      "predicted_next_10s_arrivals": 3.449
+    },
+    {
+      "recent_10s_counts_newest_first": [
+        6,
+        6,
+        6
+      ],
+      "predicted_next_10s_arrivals": 5.608
+    },
+    {
+      "recent_10s_counts_newest_first": [
+        10,
+        10,
+        10
+      ],
+      "predicted_next_10s_arrivals": 6.882
+    }
+  ],
+  "controller_integration": {
+    "scenario": "rush",
+    "seed": 42,
+    "sampled_signal_states_changed_by_forecast": 196,
+    "ml_delay_per_arrival": 54.97,
+    "queue_only_delay_per_arrival": 54.4,
+    "fixed_delay_per_arrival": 104.55
+  },
+  "interpretation": "Forecasts are expected counts and can be fractional. Zero recent traffic can still predict future arrivals. Synthetic held-out data only. ML is slightly worse than queue-only on this specific seed; multi-seed results are in evaluation_summary.json."
+}

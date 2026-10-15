@@ -1,0 +1,19 @@
+{
+  "training_samples": 9900,
+  "test_samples": 3300,
+  "mae": 1.704131825299989,
+  "rmse": 2.2033025104239887,
+  "persistence_mae": 2.0606060606060606,
+  "features": [
+    "arrivals_last_10s",
+    "arrivals_previous_10s",
+    "arrivals_previous_20_to_30s"
+  ],
+  "feature_importances": [
+    0.3735794206788718,
+    0.3638311478477529,
+    0.2625894314733753
+  ],
+  "target": "Vehicle arrivals in the next 10 seconds",
+  "data": "Synthetic Poisson arrivals with changing rates; split by independent episode."
+}

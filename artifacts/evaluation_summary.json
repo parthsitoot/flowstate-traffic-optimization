@@ -1,0 +1,53 @@
+{
+  "balanced": {
+    "fixed": {
+      "mean_delay": 38.78,
+      "sd_delay": 2.23,
+      "mean_served": 351.7
+    },
+    "reactive": {
+      "mean_delay": 21.17,
+      "sd_delay": 1.6,
+      "mean_served": 362
+    },
+    "smart": {
+      "mean_delay": 21.11,
+      "sd_delay": 1.81,
+      "mean_served": 362.7
+    }
+  },
+  "rush": {
+    "fixed": {
+      "mean_delay": 99.39,
+      "sd_delay": 12.69,
+      "mean_served": 337
+    },
+    "reactive": {
+      "mean_delay": 51.29,
+      "sd_delay": 10.46,
+      "mean_served": 413.8
+    },
+    "smart": {
+      "mean_delay": 49.1,
+      "sd_delay": 10.84,
+      "mean_served": 416.2
+    }
+  },
+  "surge": {
+    "fixed": {
+      "mean_delay": 93.34,
+      "sd_delay": 8.92,
+      "mean_served": 279.9
+    },
+    "reactive": {
+      "mean_delay": 33.39,
+      "sd_delay": 4.51,
+      "mean_served": 356.2
+    },
+    "smart": {
+      "mean_delay": 32.17,
+      "sd_delay": 3.98,
+      "mean_served": 356.7
+    }
+  }
+}
