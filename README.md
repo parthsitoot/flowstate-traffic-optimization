@@ -1,5 +1,9 @@
 # FlowState — Smart Traffic Signal Optimization
 
+[![Project checks](https://github.com/parthsitoot/flowstate-traffic-optimization/actions/workflows/checks.yml/badge.svg)](https://github.com/parthsitoot/flowstate-traffic-optimization/actions/workflows/checks.yml)
+
+Repository: https://github.com/parthsitoot/flowstate-traffic-optimization
+
 A complete ML course prototype: Python traffic simulation, a trained random forest arrival forecaster, classical computer vision on synthetic frames, a polished dashboard, and a nine-slide browser presentation.
 
 ## Code, hosting and maintenance
