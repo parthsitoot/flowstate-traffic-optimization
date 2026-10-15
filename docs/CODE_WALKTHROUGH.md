@@ -83,3 +83,9 @@ Source code, requirements, tests, reproducible results, documentation, and the f
 ## Honest scope
 
 Traffic and camera frames are synthetic. The CV demo is separate from control. This is not reinforcement learning, real CCTV detection, or a road-safe signal controller. A working model is evidence of implementation, not validation on real roads.
+
+## Try the Model tab
+
+Enter three integer counts (newest first) and submit. The browser calls `/api/predict?counts=6,6,6`; `src/service.py` validates them and calls the same fitted forest used by the simulator. The response includes the expected count, rounded count, model metadata, and an out-of-training-range flag. Example inputs can be submitted directly.
+
+`web/async.js` centralizes request retries and camera freshness. A temporary network error is retried once; if the local server is unreachable, the interface explains how to restart it. Keep `python3 app.py` running while using localhost. A localhost URL only reaches the device running that browser; use the hosted URL on another device.

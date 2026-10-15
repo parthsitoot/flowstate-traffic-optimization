@@ -19,10 +19,34 @@ class ProjectTests(unittest.TestCase):
         for counts in ([0,0,0,0],[1,4,7,9],[20,2,0,11]):
             boxes,actual=detect(scene(counts));self.assertEqual(actual,[min(9,n) for n in counts]);self.assertEqual(len(boxes),sum(actual))
     def test_transition_has_no_discharge(self):
-        a=np.ones((80,4),dtype=int);h=simulate(a)['history']
-        # Every two-second sample entirely within a transition must have no additional departures.
-        for prev,now in zip(h,h[1:]):
-            if prev['amber'] and now['amber']:self.assertEqual(prev['served'],now['served'])
+        from itertools import groupby
+        for adaptive in (False, True):
+            arrivals=np.ones((200,4),dtype=int)
+            history=simulate(arrivals,self.model if adaptive else None,adaptive,sample_every=1)['history']
+            previous_served=0
+            for frame in history:
+                if frame['amber']:
+                    self.assertEqual(frame['served'],previous_served)
+                previous_served=frame['served']
+            groups=[(key,len(list(frames))) for key,frames in groupby(history,key=lambda h:(h['amber'],h['phase']))]
+            for (clearance,phase),duration in groups[:-1]:
+                if clearance:
+                    self.assertEqual(duration,3)
+                elif adaptive:
+                    self.assertGreaterEqual(duration,10)
+                    self.assertLessEqual(duration,45)
+                else:
+                    self.assertEqual(duration,25)
+    def test_peak_queue_includes_unsampled_seconds(self):
+        arrivals=np.zeros((4,4),dtype=int)
+        arrivals[1,0]=5
+        sparse=simulate(arrivals,sample_every=2)
+        full=simulate(arrivals,sample_every=1)
+        self.assertEqual(sparse['metrics'],full['metrics'])
+        self.assertEqual(sparse['metrics']['peak_queue'],4)
+    def test_invalid_arrival_arrays_are_rejected(self):
+        for arrivals in (np.zeros((0,4)),np.zeros((5,3)),np.full((5,4),-1),np.full((5,4),.5),np.full((5,4),np.nan)):
+            with self.assertRaises(ValueError):simulate(arrivals)
     def test_forecasts_are_finite_and_respond_to_demand(self):
         predictions=self.model.predict([[0,0,0],[1,1,1],[3,3,3],[6,6,6]])
         self.assertTrue(np.all(np.isfinite(predictions)))

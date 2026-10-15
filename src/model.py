@@ -31,6 +31,10 @@ def train():
     p = model.predict(xt)
     metrics = {'training_samples': len(y), 'test_samples': len(yt), 'mae': float(mean_absolute_error(yt, p)),
                'rmse': float(mean_squared_error(yt, p)**.5), 'persistence_mae': float(mean_absolute_error(yt, xt[:,0])),
+               'moving_average_mae': float(mean_absolute_error(yt, xt.mean(axis=1))),
+               'constant_mae': float(mean_absolute_error(yt, np.full(len(yt), y.mean()))),
+               'model_type': 'RandomForestRegressor', 'n_estimators': len(model.estimators_),
+               'feature_maxima': X.max(axis=0).astype(int).tolist(),
                'features': FEATURES, 'feature_importances': model.feature_importances_.tolist(),
                'target': 'Vehicle arrivals in the next 10 seconds', 'data': 'Synthetic Poisson arrivals with changing rates; split by independent episode.'}
     return model, metrics

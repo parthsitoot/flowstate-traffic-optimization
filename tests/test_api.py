@@ -33,3 +33,21 @@ class APITests(unittest.TestCase):
 
     def test_vercel_routes_use_same_service(self):
         self.assertEqual([ModelHandler.endpoint, RunHandler.endpoint, VisionHandler.endpoint], ['model','run','vision'])
+
+    def test_custom_prediction_uses_the_fitted_forest(self):
+        for counts in ([1,1,1],[6,6,6],[6,4,2]):
+            status,result=response_for('predict', {'counts':[','.join(map(str,counts))]})
+            self.assertEqual(status,200)
+            expected=float(model_bundle()[0].predict([counts])[0])
+            self.assertAlmostEqual(result['prediction'],expected,places=3)
+            self.assertEqual(result['inputs'],counts)
+            self.assertEqual(result['n_estimators'],60)
+            self.assertFalse(result['outside_training_range'])
+    def test_custom_prediction_validates_counts(self):
+        for value in ('','1,2','1,2,3,4','1.5,2,3','-1,2,3','101,2,3','abc,2,3','nan,2,3'):
+            self.assertEqual(response_for('predict', {'counts':[value]})[0],400)
+    def test_custom_prediction_flags_unusual_inputs(self):
+        status,result=response_for('predict', {'counts':['100,100,100']})
+        self.assertEqual(status,200)
+        self.assertTrue(result['outside_training_range'])
+        self.assertGreaterEqual(result['prediction'],0)

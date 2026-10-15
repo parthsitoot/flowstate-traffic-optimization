@@ -13,7 +13,7 @@ for scenario in SCENARIOS:
         for policy in ('fixed','reactive','smart'):
             rows.append({'scenario':scenario,'seed':seed,'policy':policy,**result[policy]['metrics']})
 with (root/'evaluation.csv').open('w') as f:
-    writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+    writer=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator="\n");writer.writeheader();writer.writerows(rows)
 summary={}
 for scenario in SCENARIOS:
     summary[scenario]={}

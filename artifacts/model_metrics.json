@@ -4,6 +4,15 @@
   "mae": 1.704131825299989,
   "rmse": 2.2033025104239887,
   "persistence_mae": 2.0606060606060606,
+  "moving_average_mae": 1.7333333333333334,
+  "constant_mae": 2.197571594735231,
+  "model_type": "RandomForestRegressor",
+  "n_estimators": 60,
+  "feature_maxima": [
+    17,
+    17,
+    17
+  ],
   "features": [
     "arrivals_last_10s",
     "arrivals_previous_10s",

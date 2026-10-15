@@ -54,7 +54,7 @@
   "controller_integration": {
     "scenario": "rush",
     "seed": 42,
-    "sampled_signal_states_changed_by_forecast": 196,
+    "sampled_signal_states_changed_by_forecast": 199,
     "ml_delay_per_arrival": 54.97,
     "queue_only_delay_per_arrival": 54.4,
     "fixed_delay_per_arrival": 104.55

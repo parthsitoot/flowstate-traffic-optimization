@@ -80,7 +80,7 @@ Adaptation accounts for most of the improvement relative to equal fixed timing. 
 
 ## 7. Verification and reproducibility
 
-Nine automated tests verify deterministic arrivals, arrival/departure/remaining conservation, empty-demand behavior, synthetic image counts, no discharge within sampled clearance intervals, and held-out forecasting improvement against persistence. Additional tests verify finite demand-responsive forecasts, past-only model inputs, and changes in actual signal decisions. JavaScript syntax and Python compilation are also checked. `evaluate.py` regenerates all CSV and JSON evidence. Environment and dependencies are described in README.md.
+Eighteen Python tests and seven JavaScript tests verify deterministic arrivals, arrival/departure/remaining conservation, empty-demand behavior, synthetic image counts, no discharge within sampled clearance intervals, and held-out forecasting improvement against persistence. Additional tests verify finite demand-responsive forecasts, past-only model inputs, and changes in actual signal decisions. JavaScript syntax and Python compilation are also checked. `evaluate.py` regenerates all CSV and JSON evidence. Environment and dependencies are described in README.md.
 
 ## 8. Limitations and future work
 
@@ -93,3 +93,7 @@ FlowState provides a reproducible educational implementation of short-term deman
 ### Additional forecast baseline check
 
 The three-window moving-average baseline has held-out MAE 1.733, compared with 1.704 for the random forest. The incremental forecasting benefit over this stronger baseline is modest. A constant training-mean predictor has MAE 2.198. These values are reproducible with `python3 verify_model.py`.
+
+## Interactive prediction update
+
+The Try the Model tab accepts three user-provided recent arrival counts and calls the fitted forest through `/api/predict`. The displayed output includes the expected next count, inputs used, model metadata and a warning for values outside the observed training range. Temporary network failures are retried once; persistent connection errors provide restart guidance.

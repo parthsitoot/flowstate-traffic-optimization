@@ -1,7 +1,7 @@
-const $=id=>document.getElementById(id);let data,model,index=0,playing=true,slideIndex=0,visionBusy=false,lastVision=-1;
+const $=id=>document.getElementById(id);let data,model,index=0,playing=true,slideIndex=0;
 const names=['North','East','South','West'];
-async function get(url){const r=await fetch(url);if(!r.ok)throw Error(`Request failed (${r.status})`);return r.json()}
-function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>v.classList.toggle('active',v.dataset.view===name));$('breadcrumb').textContent=name==='dashboard'?'LIVE SIMULATION':name.toUpperCase();if(name==='presentation')renderSlide();}
+const get = url => FlowStateAsync.requestJSON(url);
+function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>v.classList.toggle('active',v.dataset.view===name));$('breadcrumb').textContent=name==='dashboard'?'LIVE SIMULATION':name==='predict'?'TRY THE MODEL':name.toUpperCase();if(name==='presentation')renderSlide();}
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>view(b.dataset.view));$('present').onclick=()=>view('presentation');
 function roundRect(c,x,y,w,h,r,color){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
 function drawJunction(h){const c=$('junction').getContext('2d');const W=760,H=460;c.clearRect(0,0,W,H);c.fillStyle='#e6ebdf';c.fillRect(0,0,W,H);
@@ -14,15 +14,143 @@ c.fillStyle='#d2d8c7';for(let i=0;i<7;i++){c.fillRect(310+i*20,160,11,7);c.fillR
 c.fillStyle='#b4c3ad';c.font='11px Arial';c.fillText('N',374,28);c.fillText('S',375,444);c.fillText('W',13,224);c.fillText('E',735,224);
 const positions=[[326,139],[479,245],[410,314],[269,196]];
 for(let d=0;d<4;d++){let [x,y]=positions[d];for(let n=0;n<Math.min(h.queues[d],18);n++){let row=Math.floor(n/2),lane=n%2;let xx=x,yy=y;if(d===0){xx+=lane*27;yy-=row*23}if(d===1){xx+=row*30;yy+=lane*15}if(d===2){xx+=lane*24;yy+=row*23}if(d===3){xx-=row*30;yy+=lane*15}const vertical=d%2===0;roundRect(c,xx,yy,vertical?13:23,vertical?19:10,3,d===h.phase&&!h.amber?'#c6edaa':'#d6dfcf');c.fillStyle='#6a8d80';c.fillRect(xx+3,yy+3,vertical?7:5,vertical?5:4)}
-const lights=[[286,144],[472,166],[470,299],[286,292]];const [lx,ly]=lights[d];roundRect(c,lx-4,ly-4,16,16,4,'#2d3b34');c.fillStyle=h.amber?'#efc866':d===h.phase?'#b9e892':'#cd766a';c.beginPath();c.arc(lx+4,ly+4,4,0,7);c.fill();}
+const lights=[[286,144],[472,166],[470,299],[286,292]];const [lx,ly]=lights[d];roundRect(c,lx-4,ly-4,16,16,4,'#2d3b34');c.fillStyle=!h.amber&&d===h.phase?'#b9e892':'#cd766a';c.beginPath();c.arc(lx+4,ly+4,4,0,7);c.fill();}
 roundRect(c,344,208,72,42,6,'#526b5b');c.fillStyle='#dbe9d3';c.textAlign='center';c.font='9px Arial';c.fillText('FLOWSTATE',380,226);c.font='8px Arial';c.fillText('JUNCTION 01',380,240);c.textAlign='left';$('phase-label').textContent=h.amber?'ALL-RED TRANSITION · 3s':`${names[h.phase].toUpperCase()} · GREEN`;
 }
-function drawChart(){if(!data)return;const c=$('chart').getContext('2d'),w=850,h=220,p=35;c.clearRect(0,0,w,h);const max=Math.max(10,...data.fixed.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.smart.history.map(x=>x.queues.reduce((a,b)=>a+b,0)));c.font='10px Arial';c.lineWidth=1;for(let i=0;i<4;i++){const y=15+i*53;c.strokeStyle='#e8ede3';c.beginPath();c.moveTo(p,y);c.lineTo(w-15,y);c.stroke();c.fillStyle='#879385';c.fillText(Math.round(max*(1-i/3)),3,y+3)}for(const [key,color]of [['fixed','#a6aea1'],['smart','#337959']]){c.strokeStyle=color;c.lineWidth=2.5;c.beginPath();data[key].history.forEach((q,i)=>{const x=p+i/(data[key].history.length-1)*(w-p-15),y=174-q.queues.reduce((a,b)=>a+b,0)/max*159;i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}c.fillStyle='#7c8b79';[0,150,300,450,600].forEach((v,i)=>c.fillText(v,p+i*(w-p-25)/4,202));const x=p+index/(data.smart.history.length-1)*(w-p-15);c.strokeStyle='#66876c';c.setLineDash([3,4]);c.beginPath();c.moveTo(x,12);c.lineTo(x,180);c.stroke();c.setLineDash([])}
-async function vision(h){if(visionBusy||lastVision===index)return;visionBusy=true;lastVision=index;try{const result=await get('/api/vision?q='+h.queues.join(','));const im=new Image();im.onload=()=>{const c=$('camera').getContext('2d');c.drawImage(im,0,0);c.strokeStyle='#a1efbf';c.lineWidth=1;c.font='7px monospace';result.boxes.forEach((b,i)=>{c.strokeRect(b.x-2,b.y-2,b.w+4,b.h+4);c.fillStyle='#b6f4d0';c.fillText('V'+(i+1),b.x,b.y-4)});$('counts').textContent=result.counts.map((n,i)=>names[i][0]+' '+String(n).padStart(2,'0')).join('   ')};im.src=result.image;}catch(e){$('counts').textContent='Camera unavailable'}finally{visionBusy=false}}
-function render(){if(!data)return;const h=data.smart.history[index];drawJunction(h);drawChart();$('timeline').value=index;const t=h.time;$('clock').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')} / 10:00`;$('lane-bars').innerHTML=names.map((name,i)=>`<div class="lane"><span>${name}</span><div class="bar"><i style="width:${Math.min(100,h.forecast[i]/8*100)}%"></i></div><b>${h.forecast[i]} predicted</b></div>`).join('');vision(h)}
-function populate(){const s=data.smart.metrics,f=data.fixed.metrics;$('improvement').innerHTML=`${data.improvement}<small>%</small>`;$('delay').innerHTML=`${s.delay_per_arrival}<small> s</small>`;$('fixed-delay').textContent=`Fixed-time: ${f.delay_per_arrival}s per arrival`;$('served').innerHTML=`${s.served}<small> / ${s.arrivals}</small>`;$('remaining').textContent=`${s.remaining} still queued · fixed-time served ${f.served}`;$('results-table').innerHTML='<table><thead><tr><th>Policy</th><th>Delay/arrival</th><th>Served</th><th>Remaining</th></tr></thead><tbody>'+[['fixed','Fixed 25s'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';}
-async function run(){const b=$('run');b.disabled=true;b.textContent='Running experiment…';$('error').textContent='';try{let seed=Number($('seed').value);if(!Number.isInteger(seed)||seed<0||seed>999999)throw Error('Choose an integer seed between 0 and 999999.');data=await get(`/api/run?scenario=${$('scenario').value}&seed=${seed}`);index=0;lastVision=-1;playing=true;$('play').textContent='Ⅱ';$('timeline').max=data.smart.history.length-1;populate();render()}catch(e){$('error').textContent=e.message}finally{b.disabled=false;b.textContent='↻ Run experiment'}}
-$('run').onclick=run;$('play').onclick=()=>{if(data&&index===data.smart.history.length-1){index=0;lastVision=-1;}playing=!playing;$('play').textContent=playing?'Ⅱ':'▶';$('play').setAttribute('aria-label',playing?'Pause playback':'Resume playback')};$('timeline').oninput=()=>{index=Number($('timeline').value);render()};setInterval(()=>{if(playing&&data&&!$('dashboard').classList.contains('hidden')){index=Math.min(index+Number($('speed').value),data.smart.history.length-1);render();if(index===data.smart.history.length-1){playing=false;$('play').textContent='▶'}}},1000);
+function drawChart(){if(!data)return;const c=$('chart').getContext('2d'),w=850,h=220,p=35;c.clearRect(0,0,w,h);const max=Math.max(10,...data.fixed.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.smart.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.reactive.history.map(x=>x.queues.reduce((a,b)=>a+b,0)));c.font='10px Arial';c.lineWidth=1;for(let i=0;i<4;i++){const y=15+i*53;c.strokeStyle='#e8ede3';c.beginPath();c.moveTo(p,y);c.lineTo(w-15,y);c.stroke();c.fillStyle='#879385';c.fillText(Math.round(max*(1-i/3)),3,y+3)}for(const [key,color]of [['fixed','#a6aea1'],['reactive','#bd8b42'],['smart','#337959']]){c.strokeStyle=color;c.lineWidth=2.5;c.beginPath();data[key].history.forEach((q,i)=>{const x=p+i/(data[key].history.length-1)*(w-p-15),y=174-q.queues.reduce((a,b)=>a+b,0)/max*159;i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}c.fillStyle='#7c8b79';[0,150,300,450,600].forEach((v,i)=>c.fillText(v,p+i*(w-p-25)/4,202));const x=p+index/(data.smart.history.length-1)*(w-p-15);c.strokeStyle='#66876c';c.setLineDash([3,4]);c.beginPath();c.moveTo(x,12);c.lineTo(x,180);c.stroke();c.setLineDash([])}
+const cameraFrames = new FlowStateAsync.LatestFrameLoader(
+  key => get('/api/vision?q=' + key),
+  async (result, isCurrent) => {
+    const im = new Image();
+    im.src = result.image;
+    await im.decode();
+    if (!isCurrent()) return;
+    const c = $('camera').getContext('2d');
+    c.drawImage(im, 0, 0);
+    c.strokeStyle = '#a1efbf';
+    c.lineWidth = 1;
+    c.font = '7px monospace';
+    result.boxes.forEach((box, i) => {
+      c.strokeRect(box.x-2, box.y-2, box.w+4, box.h+4);
+      c.fillStyle = '#b6f4d0';
+      c.fillText('V'+(i+1), box.x, box.y-4);
+    });
+    $('counts').textContent = result.counts.map((n,i) => names[i][0]+' '+String(n).padStart(2,'0')).join('   ');
+  },
+  () => { $('counts').textContent = 'Camera unavailable. Move the timeline to retry.'; }
+);
+function vision(h) { cameraFrames.request(h.queues.map(n => Math.min(9,n)).join(',')); }
+function updatePlayButton() {
+  $('play').textContent = playing ? 'Ⅱ' : '▶';
+  $('play').setAttribute('aria-label', playing ? 'Pause playback' : 'Resume playback');
+}
+function render(){if(!data)return;const h=data.smart.history[index];drawJunction(h);drawChart();$('timeline').value=index;const t=h.time;$('clock').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')} / 10:00`;$('lane-bars').innerHTML=names.map((name,i)=>`<div class="lane"><span>${name}</span><div class="bar"><i style="width:${Math.min(100,h.forecast[i]/8*100)}%"></i></div><b>${h.queues[i]} queued · ${h.forecast[i]} next</b></div>`).join('');vision(h)}
+function populate(){const s=data.smart.metrics,f=data.fixed.metrics;$('improvement').innerHTML=`${data.improvement}<small>%</small>`;$('delay').innerHTML=`${s.delay_per_arrival}<small> s</small>`;$('fixed-delay').textContent=`Fixed-time: ${f.delay_per_arrival}s per arrival`;$('served').innerHTML=`${s.served}<small> / ${s.arrivals}</small>`;$('remaining').textContent=`${s.remaining} still queued · fixed-time served ${f.served}`;$('experiment-context').textContent=`Completed experiment: ${data.scenario} · seed ${data.seed} · ${data.seconds}s. Forecast bars estimate arrivals in the next 10 seconds.`;$('export').disabled=false;$('results-table').innerHTML='<table><thead><tr><th>Policy</th><th>Delay/arrival</th><th>Served</th><th>Remaining</th></tr></thead><tbody>'+[['fixed','Fixed 25s'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';}
+async function loadModel() {
+  if (model) return;
+  model = await get('/api/model');
+  $('mae').innerHTML = `${model.mae.toFixed(2)}<small> veh</small>`;
+  $('model-details').innerHTML = `<table><tr><td>Algorithm</td><td>Random forest · ${model.n_estimators} trees · depth ≤ 8</td></tr><tr><td>Training / test windows</td><td>${model.training_samples} / ${model.test_samples}</td></tr><tr><td>Test MAE / RMSE</td><td>${model.mae.toFixed(3)} / ${model.rmse.toFixed(3)}</td></tr><tr><td>Persistence baseline MAE</td><td>${model.persistence_mae.toFixed(3)}</td></tr><tr><td>Moving-average baseline MAE</td><td>${model.moving_average_mae.toFixed(3)}</td></tr></table>`;
+}
+async function run() {
+  const button = $('run');
+  button.disabled = true;
+  button.textContent = 'Running experiment…';
+  $('error').textContent = '';
+  const previousPlaying = playing;
+  playing = false;
+  updatePlayButton();
+  try {
+    const seedText = $('seed').value.trim();
+    const seed = Number(seedText);
+    if (!seedText || !Number.isInteger(seed) || seed < 0 || seed > 999999)
+      throw Error('Choose an integer seed between 0 and 999999.');
+    const scenario = $('scenario').value;
+    await loadModel();
+    const result = await get(`/api/run?scenario=${scenario}&seed=${seed}`);
+    data = result;
+    index = 0;
+    playing = true;
+    $('timeline').max = data.smart.history.length-1;
+    populate();
+    render();
+  } catch (error) {
+    $('error').textContent = error.message;
+    playing = previousPlaying && Boolean(data);
+  } finally {
+    updatePlayButton();
+    button.disabled = false;
+    button.textContent = '↻ Run experiment';
+  }
+}
+$('run').onclick = run;
+$('play').onclick = () => {
+  if (!data) return;
+  if (index === data.smart.history.length-1) index = 0;
+  playing = !playing;
+  updatePlayButton();
+  render();
+};
+$('timeline').oninput = () => {
+  if (!data) return;
+  index = Number($('timeline').value);
+  playing = false;
+  updatePlayButton();
+  render();
+};
+setInterval(() => {
+  if (playing && data && !$('dashboard').classList.contains('hidden')) {
+    index = Math.min(index + Number($('speed').value), data.smart.history.length-1);
+    render();
+    if (index === data.smart.history.length-1) { playing = false; updatePlayButton(); }
+  }
+}, 1000);
+$('export').onclick = () => {
+  if (!data) return;
+  const keys = Object.keys(data.fixed.metrics);
+  const rows = [['scenario','seed','seconds','policy',...keys]];
+  for (const policy of ['fixed','reactive','smart'])
+    rows.push([data.scenario,data.seed,data.seconds,policy,...keys.map(k => data[policy].metrics[k])]);
+  const csv = rows.map(row => row.join(',')).join('\n') + '\n';
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `flowstate-${data.scenario}-seed-${data.seed}.csv`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+const predictionInputs = ['count-recent','count-previous','count-oldest'];
+document.querySelectorAll('[data-counts]').forEach(button => {
+  button.onclick = () => {
+    button.dataset.counts.split(',').forEach((value,i) => { $(predictionInputs[i]).value = value; });
+    $('predict-form').requestSubmit();
+  };
+});
+$('predict-form').onsubmit = async event => {
+  event.preventDefault();
+  const button = $('predict-submit');
+  if (button.disabled) return;
+  const counts = predictionInputs.map(id => Number($(id).value));
+  $('predict-error').textContent = '';
+  if (predictionInputs.some(id => !$(id).value.trim()) || counts.some(n => !Number.isInteger(n) || n < 0 || n > 100)) {
+    $('predict-error').textContent = 'Enter three whole vehicle counts from 0 to 100.';
+    return;
+  }
+  button.disabled = true;
+  button.textContent = 'Running the model…';
+  try {
+    const result = await get('/api/predict?counts=' + counts.join(','));
+    $('prediction-value').innerHTML = `${result.prediction.toFixed(2)}<small>vehicles</small>`;
+    $('prediction-description').textContent = `About ${result.rounded_prediction} ${result.rounded_prediction===1?'arrival':'arrivals'} expected during the next ${result.horizon_seconds} seconds.`;
+    $('prediction-note').textContent = result.note;
+    $('prediction-status').textContent = `Inputs (newest first): [${result.inputs.join(', ')}] · ${result.n_estimators} fitted trees · test MAE ${result.test_mae.toFixed(2)} vehicles.`;
+    const values = [...result.inputs.slice().reverse(),result.prediction];
+    const labels = ['20–30s ago','10–20s ago','Last 10s','Next 10s'];
+    const max = Math.max(1,...values);
+    $('prediction-bars').innerHTML = values.map((value,i) => `<div class="prediction-row"><span>${labels[i]}</span><div><i style="width:${value/max*100}%"></i></div><b>${i===3?value.toFixed(2):value}</b></div>`).join('');
+  } catch (error) { $('predict-error').textContent = error.message; }
+  finally { button.disabled = false; button.textContent = 'Generate prediction →'; }
+};
 const slides=[
 ['Smarter signals. Less waiting.','Smart Traffic Signal Optimization Using Machine Learning and Computer Vision','Our goal: reduce accumulated waiting at a four-way intersection while responding to uneven traffic demand. This is an academic simulation prototype.'],
 ['Why fixed timers fall short.','A fixed signal gives every approach the same 25-second green, even when demand is uneven. A busy road waits while an empty road has right of way.','Explain with a morning commute: North and South have many vehicles, but East and West still receive equal green time.'],
@@ -35,4 +163,4 @@ const slides=[
 ['The next intersection.','Real video + vehicle tracking.<br>Calibrated traffic simulation and turning lanes.<br>Pedestrian phases and safety validation.<br>Evaluate on real demand patterns.','Conclude: we built a working, reproducible experimental system connecting computer vision concepts, supervised learning, and adaptive control. Field deployment is future work.']];
 function renderSlide(){const s=slides[slideIndex];$('slide').innerHTML=`<div class="number">${String(slideIndex+1).padStart(2,'0')} / FLOWSTATE</div><h1>${s[0]}</h1><div class="slide-body">${s[1]}</div><div class="notes"><b>SPEAKER NOTES</b><br>${s[2]}</div>`;$('slide-count').textContent=`${slideIndex+1} / ${slides.length}`;$('prev').disabled=slideIndex===0;$('next').disabled=slideIndex===slides.length-1}
 $('prev').onclick=()=>{slideIndex=Math.max(0,slideIndex-1);renderSlide()};$('next').onclick=()=>{slideIndex=Math.min(slides.length-1,slideIndex+1);renderSlide()};$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('presentation').requestFullscreen()}catch(e){$('error').textContent='Fullscreen is unavailable in this browser.'}};document.addEventListener('keydown',e=>{if(!$('presentation').classList.contains('hidden')){if(e.key==='ArrowRight')$('next').click();if(e.key==='ArrowLeft')$('prev').click()}});
-(async()=>{try{model=await get('/api/model');$('mae').innerHTML=`${model.mae.toFixed(2)}<small> veh</small>`;$('model-details').innerHTML=`<table><tr><td>Algorithm</td><td>Random forest · 60 trees · depth ≤ 8</td></tr><tr><td>Training / test windows</td><td>${model.training_samples} / ${model.test_samples}</td></tr><tr><td>Test MAE / RMSE</td><td>${model.mae.toFixed(3)} / ${model.rmse.toFixed(3)}</td></tr><tr><td>Persistence baseline MAE</td><td>${model.persistence_mae.toFixed(3)}</td></tr></table>`;await run()}catch(e){$('error').textContent='Unable to load the model. Retry shortly; for local use, start python3 app.py. '+e.message}})();
+run();

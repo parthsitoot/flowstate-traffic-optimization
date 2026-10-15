@@ -2,7 +2,7 @@
 
 ## Architecture
 
-This repository keeps the same Python ML and simulation implementation for local and hosted use. Vercel serves the static dashboard from `web/`, and routes `/api/model`, `/api/run`, and `/api/vision` to Python functions under `api/`. They all call `src/service.py`.
+This repository keeps the same Python ML and simulation implementation for local and hosted use. Vercel serves the static dashboard from `web/`, and routes `/api/model`, `/api/run`, `/api/predict`, and `/api/vision` to Python functions under `api/`. They all call `src/service.py`.
 
 There are no API keys or environment variables required by the project itself. Hosting requires your GitHub/Vercel account authorization. The app contains synthetic data only and has no user database or sign-in system.
 
@@ -33,3 +33,5 @@ Cold starts train a small forest once per process; allow a short initial wait. S
 - [Vercel Python runtime](https://vercel.com/docs/functions/runtimes/python)
 - [Python functions in the api directory](https://vercel.com/docs/functions/runtimes/python/api-directory)
 - [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json)
+
+- `/api/predict?counts=6,6,6` returns a prediction of approximately 5.608 and model metadata.

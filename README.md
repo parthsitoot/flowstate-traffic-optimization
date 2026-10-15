@@ -78,4 +78,14 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Model verification
 
-`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Thirteen tests also check that the simulator passes only past arrival counts to the model.
+`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Eighteen Python tests and seven JavaScript tests also check that the simulator passes only past arrival counts to the model.
+
+## Dashboard improvements
+
+The comparison chart shows all three policies. Export CSV downloads the selected experiment with its actual seed and all metrics. Camera rendering coalesces slow requests and reuses up to 64 visible queue states. Signal history records the phase active during that second, and peak queues are measured every second.
+
+## Use your own input
+
+Open **Try the Model**, enter the three most recent 10-second arrival counts, and click **Generate prediction**. `[6,6,6]` produces approximately 5.61 expected arrivals. This uses the same trained forest as the simulator. `/api/predict?counts=6,6,6` is available locally and on Vercel. Inputs outside the observed training range are flagged.
+
+If the browser cannot connect, keep `python3 app.py` running and retry. Refresh old tabs after code changes. Another computer or phone needs the deployed URL, not your laptop's localhost URL.
