@@ -1,14 +1,14 @@
 const $=id=>document.getElementById(id);let data,model,index=0,playing=true,slideIndex=0;
 const names=['North','East','South','West'];
 const get = url => FlowStateAsync.requestJSON(url);
-function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>{const active=v.dataset.view===name;v.classList.toggle('active',active);if(active)v.setAttribute('aria-current','page');else v.removeAttribute('aria-current')});$('breadcrumb').textContent=name==='dashboard'?'INTERSECTION OVERVIEW':name==='predict'?'TRY THE MODEL':name==='research'?'MODEL & METHODOLOGY':'PRESENTATION';window.scrollTo(0,0);if(name==='presentation')renderSlide();}
+function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>{const active=v.dataset.view===name;v.classList.toggle('active',active);if(active)v.setAttribute('aria-current','page');else v.removeAttribute('aria-current')});$('breadcrumb').textContent=name==='dashboard'?'Simulation':name==='predict'?'Predict arrivals':name==='research'?'How it works':'Presentation';window.scrollTo(0,0);if(name==='presentation')renderSlide();}
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>view(b.dataset.view));$('present').onclick=()=>view('presentation');
 function roundRect(c,x,y,w,h,r,color){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
-function drawJunction(h){const c=$('junction').getContext('2d');const W=760,H=460;c.clearRect(0,0,W,H);c.fillStyle='#e6ebdf';c.fillRect(0,0,W,H);
+function drawJunction(h){const c=$('junction').getContext('2d');const W=760,H=460;c.clearRect(0,0,W,H);c.fillStyle='#e7eae8';c.fillRect(0,0,W,H);
 // Quiet urban blocks, trees, and roads drawn without external assets.
-for(const [x,y,w,hh]of [[32,62,212,105],[510,48,205,120],[27,300,220,120],[514,300,214,120]]){roundRect(c,x+5,y+5,w,hh,9,'#d5dece');roundRect(c,x,y,w,hh,9,'#dce4d5');for(let j=0;j<3;j++){roundRect(c,x+17+j*59,y+18,44,hh-36,4,'#c9d4c3')}}
+for(const [x,y,w,hh]of [[32,62,212,105],[510,48,205,120],[27,300,220,120],[514,300,214,120]]){roundRect(c,x+5,y+5,w,hh,9,'#d5dcd6');roundRect(c,x,y,w,hh,9,'#e0e5df');for(let j=0;j<3;j++){roundRect(c,x+17+j*59,y+18,44,hh-36,4,'#ced7cd')}}
 for(const [x,y]of [[265,75],[490,85],[258,368],[492,370],[70,270],[670,186]]){c.fillStyle='#b8cdb0';c.beginPath();c.arc(x,y,12,0,7);c.fill();c.fillStyle='#9fbd98';c.beginPath();c.arc(x-3,y-3,7,0,7);c.fill()}
-c.fillStyle='#aab9ad';c.fillRect(297,0,166,H);c.fillRect(0,170,W,120);c.fillStyle='#40534d';c.fillRect(305,0,150,H);c.fillRect(0,178,W,104);
+c.fillStyle='#aab9ad';c.fillRect(297,0,166,H);c.fillRect(0,170,W,120);c.fillStyle='#495451';c.fillRect(305,0,150,H);c.fillRect(0,178,W,104);
 c.strokeStyle='#8c9b8c';c.lineWidth=2;c.setLineDash([12,12]);c.beginPath();c.moveTo(380,0);c.lineTo(380,178);c.moveTo(380,282);c.lineTo(380,H);c.moveTo(0,230);c.lineTo(305,230);c.moveTo(455,230);c.lineTo(W,230);c.stroke();c.setLineDash([]);
 c.fillStyle='#d2d8c7';for(let i=0;i<7;i++){c.fillRect(310+i*20,160,11,7);c.fillRect(310+i*20,293,11,7)}for(let i=0;i<4;i++){c.fillRect(287,184+i*25,7,15);c.fillRect(467,184+i*25,7,15)}
 c.fillStyle='#b4c3ad';c.font='11px Arial';c.fillText('N',374,28);c.fillText('S',375,444);c.fillText('W',13,224);c.fillText('E',735,224);
@@ -17,7 +17,7 @@ for(let d=0;d<4;d++){let [x,y]=positions[d];for(let n=0;n<Math.min(h.queues[d],1
 const lights=[[286,144],[472,166],[470,299],[286,292]];const [lx,ly]=lights[d];roundRect(c,lx-4,ly-4,16,16,4,'#2d3b34');c.fillStyle=!h.amber&&d===h.phase?'#b9e892':'#cd766a';c.beginPath();c.arc(lx+4,ly+4,4,0,7);c.fill();}
 roundRect(c,344,208,72,42,6,'#526b5b');c.fillStyle='#dbe9d3';c.textAlign='center';c.font='9px Arial';c.fillText('FLOWSTATE',380,226);c.font='8px Arial';c.fillText('JUNCTION 01',380,240);c.textAlign='left';$('phase-label').textContent=h.amber?'ALL-RED TRANSITION · 3s':`${names[h.phase].toUpperCase()} · GREEN`;
 }
-function drawChart(){if(!data)return;const c=$('chart').getContext('2d'),w=850,h=220,p=35;c.clearRect(0,0,w,h);const max=Math.max(10,...data.fixed.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.smart.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.reactive.history.map(x=>x.queues.reduce((a,b)=>a+b,0)));c.font='10px Arial';c.lineWidth=1;for(let i=0;i<4;i++){const y=15+i*53;c.strokeStyle='#e8ede3';c.beginPath();c.moveTo(p,y);c.lineTo(w-15,y);c.stroke();c.fillStyle='#879385';c.fillText(Math.round(max*(1-i/3)),3,y+3)}for(const [key,color]of [['fixed','#a6aea1'],['reactive','#bd8b42'],['smart','#337959']]){c.strokeStyle=color;c.lineWidth=2.5;c.beginPath();data[key].history.forEach((q,i)=>{const x=p+i/(data[key].history.length-1)*(w-p-15),y=174-q.queues.reduce((a,b)=>a+b,0)/max*159;i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}c.fillStyle='#7c8b79';[0,150,300,450,600].forEach((v,i)=>c.fillText(v,p+i*(w-p-25)/4,202));const x=p+index/(data.smart.history.length-1)*(w-p-15);c.strokeStyle='#66876c';c.setLineDash([3,4]);c.beginPath();c.moveTo(x,12);c.lineTo(x,180);c.stroke();c.setLineDash([])}
+function drawChart(){if(!data)return;const c=$('chart').getContext('2d'),w=850,h=220,p=35;c.clearRect(0,0,w,h);const max=Math.max(10,...data.fixed.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.smart.history.map(x=>x.queues.reduce((a,b)=>a+b,0)),...data.reactive.history.map(x=>x.queues.reduce((a,b)=>a+b,0)));c.font='10px Arial';c.lineWidth=1;for(let i=0;i<4;i++){const y=15+i*53;c.strokeStyle='#e8e8ed';c.beginPath();c.moveTo(p,y);c.lineTo(w-15,y);c.stroke();c.fillStyle='#7a7a80';c.fillText(Math.round(max*(1-i/3)),3,y+3)}for(const [key,color]of [['fixed','#969ba2'],['reactive','#bd8b42'],['smart','#0071e3']]){c.strokeStyle=color;c.lineWidth=2.5;c.beginPath();data[key].history.forEach((q,i)=>{const x=p+i/(data[key].history.length-1)*(w-p-15),y=174-q.queues.reduce((a,b)=>a+b,0)/max*159;i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}c.fillStyle='#7a7a80';[0,150,300,450,600].forEach((v,i)=>c.fillText(v,p+i*(w-p-25)/4,202));const x=p+index/(data.smart.history.length-1)*(w-p-15);c.strokeStyle='#7d8b9d';c.setLineDash([3,4]);c.beginPath();c.moveTo(x,12);c.lineTo(x,180);c.stroke();c.setLineDash([])}
 const cameraFrames = new FlowStateAsync.LatestFrameLoader(
   key => get('/api/vision?q=' + key),
   async (result, isCurrent) => {
@@ -61,7 +61,7 @@ function populate(){
   $('fixed-delay').textContent=`Fixed timer: ${f.delay_per_arrival}s per arrival`;
   $('served').innerHTML=`${s.served}<small> / ${s.arrivals}</small>`;
   $('remaining').textContent=`${s.remaining} still queued · fixed timer crossed ${f.served}`;
-  $('experiment-context').textContent=`Showing: ${scenarioLabel(data.scenario)} · seed ${data.seed} · ${data.seconds/60} minutes. The playback below shows the ML-assisted run.`;
+  $('experiment-context').textContent=`Showing: ${scenarioLabel(data.scenario)} · run ${data.seed} · ${data.seconds/60} minutes. The playback below shows the ML-assisted run.`;
   $('export').disabled=false;
   $('results-table').innerHTML='<table><thead><tr><th>Signal strategy</th><th>Wait per arrival</th><th>Cars crossed</th><th>Still queued</th></tr></thead><tbody>'+[['fixed','Fixed timer'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';
 }
@@ -77,6 +77,7 @@ async function run() {
   button.disabled = true;
   button.textContent = 'Running experiment…';
   $('error').textContent = '';
+  $('connection-error').hidden = true;
   const previousPlaying = playing;
   playing = false;
   updatePlayButton();
@@ -96,14 +97,16 @@ async function run() {
     render();
   } catch (error) {
     $('error').textContent = error.message;
+    $('connection-error').hidden = false;
     playing = previousPlaying && Boolean(data);
   } finally {
     updatePlayButton();
     button.disabled = false;
-    button.textContent = '↻ Run comparison';
+    button.textContent = 'Run comparison';
   }
 }
 $('run').onclick = run;
+$('retry').onclick = run;
 $('play').onclick = () => {
   if (!data) return;
   if (index === data.smart.history.length-1) index = 0;
@@ -192,5 +195,5 @@ const slides=[
 ['What the results mean.','Forecast error and traffic delay are different outcomes. Better prediction does not automatically guarantee better signal decisions.','Use the displayed results for the selected seed. The artifacts folder contains multi-seed evaluations. No real-world percentage reduction is claimed.'],
 ['The next intersection.','Real video + vehicle tracking.<br>Calibrated traffic simulation and turning lanes.<br>Pedestrian phases and safety validation.<br>Evaluate on real demand patterns.','Conclude: we built a working, reproducible experimental system connecting computer vision concepts, supervised learning, and adaptive control. Field deployment is future work.']];
 function renderSlide(){const s=slides[slideIndex];$('slide').innerHTML=`<div class="number">${String(slideIndex+1).padStart(2,'0')} / FLOWSTATE</div><h1>${s[0]}</h1><div class="slide-body">${s[1]}</div><div class="notes"><b>SPEAKER NOTES</b><br>${s[2]}</div>`;$('slide-count').textContent=`${slideIndex+1} / ${slides.length}`;$('prev').disabled=slideIndex===0;$('next').disabled=slideIndex===slides.length-1}
-$('prev').onclick=()=>{slideIndex=Math.max(0,slideIndex-1);renderSlide()};$('next').onclick=()=>{slideIndex=Math.min(slides.length-1,slideIndex+1);renderSlide()};$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('presentation').requestFullscreen()}catch(e){$('error').textContent='Fullscreen is unavailable in this browser.'}};document.addEventListener('keydown',e=>{if(!$('presentation').classList.contains('hidden')){if(e.key==='ArrowRight')$('next').click();if(e.key==='ArrowLeft')$('prev').click()}});
-run();
+$('prev').onclick=()=>{slideIndex=Math.max(0,slideIndex-1);renderSlide()};$('next').onclick=()=>{slideIndex=Math.min(slides.length-1,slideIndex+1);renderSlide()};$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('presentation').requestFullscreen()}catch(e){$('connection-error').hidden=false;$('error').textContent='Fullscreen is unavailable in this browser.';view('dashboard')}};document.addEventListener('keydown',e=>{if(!$('presentation').classList.contains('hidden')){if(e.key==='ArrowRight')$('next').click();if(e.key==='ArrowLeft')$('prev').click()}});
+if (location.protocol !== 'file:') run();

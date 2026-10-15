@@ -24,7 +24,7 @@ On this computer, dependencies are already available. From this project folder:
 python3 app.py
 ```
 
-Open **http://localhost:8000**. Keep the terminal running. Internet is not required once dependencies are installed. Click **Presentation mode** for the slides and speaker notes.
+Open **http://localhost:8000**. Keep the terminal running. If you open `web/index.html` directly from Finder, it redirects to the online app because a local HTML file cannot run the Python model. Internet is not required once dependencies are installed. Click **Presentation mode** for the slides and speaker notes.
 
 For a fresh computer (Python 3.10 or newer):
 
@@ -80,11 +80,11 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Model verification
 
-`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Eighteen Python tests and seven JavaScript tests also check that the simulator passes only past arrival counts to the model.
+`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Eighteen Python tests and nine JavaScript tests also check that the simulator passes only past arrival counts to the model.
 
 ## Dashboard improvements
 
-The overview has a three-step guide, a plain-language verdict for each run, explanations alongside the metrics, and a chart labeled with the better direction. The model tab explains decimals, training limits, and test error next to the output. Technical formulas and deeper assumptions stay available in expandable sections. Switching tabs returns to the top so each explanation starts at its heading.
+The interface uses a compact top navigation, neutral backgrounds, readable system typography, and a single blue accent. Results include a plain-language verdict and explain the comparison methods. The model tab explains decimals, training limits, and test error next to the output. Formulas and deeper assumptions stay in expandable sections.
 
 The comparison chart shows all three policies. Export CSV downloads the selected experiment with its actual run number and all metrics. Camera rendering coalesces slow requests and reuses up to 64 visible queue states. Signal history records the phase active during that second, and peak queues are measured every second.
 

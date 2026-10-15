@@ -73,8 +73,25 @@ test('transient failed-to-fetch recovers automatically on the next attempt', asy
   assert.equal(attempts,2);
   assert.equal(result.prediction,5.608);
 });
-test('persistent network failure gives actionable localhost guidance', async () => {
-  await assert.rejects(requestJSON('/api/run',{fetcher:async()=>{throw TypeError('Failed to fetch');}}),/keep python3 app.py running/);
+test('persistent network failure gives connection recovery guidance', async () => {
+  await assert.rejects(requestJSON('/api/run',{fetcher:async()=>{throw TypeError('Failed to fetch');}}),/Check your internet connection/);
+});
+
+test('direct file opens route to the working hosted app, while servers stay local', () => {
+  const source = require('node:fs').readFileSync(require.resolve('../web/entry.js'),'utf8');
+  const redirects=[];
+  const vm = require('node:vm');
+  for (const protocol of ['file:','http:','https:'])
+    vm.runInNewContext(source,{location:{protocol,replace:url=>redirects.push({protocol,url})}});
+  assert.deepEqual(redirects,[{protocol:'file:',url:'https://flowstate-traffic-optimization.vercel.app/'}]);
+});
+
+test('connection help matches the place the user opened the app', () => {
+  const {connectionMessage} = require('../web/async.js');
+  assert.match(connectionMessage({protocol:'http:',hostname:'localhost'}),/Keep python3 app.py running/);
+  assert.match(connectionMessage({protocol:'file:'}),/Open FlowState online/);
+  assert.match(connectionMessage({protocol:'https:',hostname:'flowstate-traffic-optimization.vercel.app'}),/internet connection/);
+  assert.doesNotMatch(connectionMessage({protocol:'https:',hostname:'flowstate-traffic-optimization.vercel.app'}),/python3/);
 });
 test('invalid custom model input is not retried', async () => {
   let attempts=0;
