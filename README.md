@@ -4,6 +4,8 @@
 
 Repository: https://github.com/parthsitoot/flowstate-traffic-optimization
 
+**Live demo:** https://flowstate-traffic-optimization.vercel.app
+
 A complete ML course prototype: Python traffic simulation, a trained random forest arrival forecaster, classical computer vision on synthetic frames, a polished dashboard, and a nine-slide browser presentation.
 
 ## Code, hosting and maintenance

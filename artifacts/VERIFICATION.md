@@ -15,7 +15,7 @@ The dashboard has been visually inspected at narrow and desktop widths.
 
 - Local and Vercel HTTP handler smoke tests: HTTP 200; rush seed 42 served 411 vehicles.
 - GitHub Actions on Python 3.12: successful initial run 38683431108.
-- Vercel hosting is configured but requires account sign-in before deployment can be completed.
+- Vercel production deployment completed: https://flowstate-traffic-optimization.vercel.app. All four API endpoints verified externally.
 
 - Signal timing regression: exact 3-second no-discharge transitions and 10-45-second adaptive greens verified at every second.
 - Peak queue no longer depends on playback sampling.

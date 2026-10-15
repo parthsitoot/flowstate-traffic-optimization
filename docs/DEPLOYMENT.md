@@ -1,5 +1,9 @@
 # GitHub and Vercel deployment
 
+Live production site: https://flowstate-traffic-optimization.vercel.app
+
+Verified production commit: `c335815`. The prediction, experiment, model and vision APIs passed external HTTP checks. The hosted prediction form was also verified in the browser.
+
 ## Architecture
 
 This repository keeps the same Python ML and simulation implementation for local and hosted use. Vercel serves the static dashboard from `web/`, and routes `/api/model`, `/api/run`, `/api/predict`, and `/api/vision` to Python functions under `api/`. They all call `src/service.py`.
