@@ -1,6 +1,9 @@
 """Check the shared contract used by local and Vercel HTTP adapters."""
 import unittest
-from src.service import response_for, model_bundle
+from src.service import response_for, model_bundle, comparison_bundle
+from src.model import dataset
+from src.simulation import arrivals_for, simulate
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from api.model import handler as ModelHandler
 from api.run import handler as RunHandler
 from api.vision import handler as VisionHandler
@@ -51,3 +54,33 @@ class APITests(unittest.TestCase):
         self.assertEqual(status,200)
         self.assertTrue(result['outside_training_range'])
         self.assertGreaterEqual(result['prediction'],0)
+
+    def test_three_forecasts_and_errors_come_from_fitted_estimators(self):
+        bundle = comparison_bundle()
+        self.assertIs(bundle, comparison_bundle())
+        xt, yt = dataset(722, 100)
+        for counts in ([1,1,1], [6,6,6], [6,4,2], [100,100,100]):
+            status, result = response_for('predict', {'counts':[','.join(map(str,counts))]})
+            self.assertEqual(status, 200)
+            self.assertEqual({r['id'] for r in result['models']},
+                             {'random_forest','linear_regression','decision_tree'})
+            for row in result['models']:
+                estimator = bundle['estimators'][row['id']]
+                self.assertAlmostEqual(row['prediction'], float(estimator.predict([counts])[0]), places=3)
+                predictions = estimator.predict(xt)
+                self.assertAlmostEqual(row['mae'], mean_absolute_error(yt, predictions))
+                self.assertAlmostEqual(row['rmse'], mean_squared_error(yt, predictions)**.5)
+            self.assertEqual(result['prediction'], result['models'][0]['prediction'])
+
+    def test_three_signal_controllers_use_same_traffic_and_fitted_models(self):
+        status, result = response_for('run', {'scenario':['surge'], 'seed':['3']})
+        self.assertEqual(status, 200)
+        arrivals = arrivals_for('surge', 3, 600)
+        bundle = comparison_bundle()
+        self.assertEqual(len(result['model_comparison']), 3)
+        for row in result['model_comparison']:
+            expected = simulate(arrivals, bundle['estimators'][row['id']], True)['metrics']
+            self.assertEqual(row['metrics'], expected)
+            self.assertEqual(row['metrics']['arrivals'], int(arrivals.sum()))
+            self.assertEqual(row['metrics']['served']+row['metrics']['remaining'], int(arrivals.sum()))
+        self.assertEqual(result['model_comparison'][0]['metrics'], result['smart']['metrics'])

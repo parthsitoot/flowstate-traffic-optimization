@@ -80,6 +80,7 @@ function populate(){
   $('remaining').textContent=`${s.remaining} still queued · fixed timer crossed ${f.served}`;
   $('experiment-context').textContent=`Showing: ${scenarioLabel(data.scenario)} · run ${data.seed} · ${data.seconds/60} minutes. The playback below shows the ML-assisted run.`;
   $('export').disabled=false;
+  renderSignalModels(data);
   $('results-table').innerHTML='<table><thead><tr><th>Signal strategy</th><th>Wait per arrival</th><th>Cars crossed</th><th>Still queued</th></tr></thead><tbody>'+[['fixed','Fixed timer'],['reactive','Queue-only'],['smart','ML-assisted']].map(([k,n])=>`<tr><td>${n}</td><td>${data[k].metrics.delay_per_arrival}s</td><td>${data[k].metrics.served}</td><td>${data[k].metrics.remaining}</td></tr>`).join('')+'</tbody></table>';
 }
 function scenarioLabel(key){return {rush:'morning rush',balanced:'balanced traffic',surge:'eastbound surge'}[key]||key}
@@ -153,6 +154,8 @@ $('export').onclick = () => {
   const rows = [['scenario','seed','seconds','policy',...keys]];
   for (const policy of ['fixed','reactive','smart'])
     rows.push([data.scenario,data.seed,data.seconds,policy,...keys.map(k => data[policy].metrics[k])]);
+  for (const row of data.model_comparison.filter(row=>row.id!=='random_forest'))
+    rows.push([data.scenario,data.seed,data.seconds,`adaptive_${row.id}`,...keys.map(k=>row.metrics[k])]);
   const csv = rows.map(row => row.join(',')).join('\n') + '\n';
   const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
   const link = document.createElement('a');
@@ -161,16 +164,57 @@ $('export').onclick = () => {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+function textNode(tag, text, className='') {
+  const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;return node;
+}
+function renderForecastModels(result) {
+  const rows=result.models;
+  const section=$('algorithm-comparison');section.hidden=false;section.dataset.stale='false';
+  const cards=$('algorithm-cards');cards.replaceChildren();
+  const bestMAE=Math.min(...rows.map(row=>row.mae));
+  const bestRMSE=Math.min(...rows.map(row=>row.rmse));
+  for(const row of rows){
+    const card=document.createElement('article');card.className='model-result';
+    card.append(textNode('h3',row.name));
+    card.append(textNode('p',row.id==='random_forest'?'Main simulation model':row.mae===bestMAE?'Lowest test MAE':'Single tree baseline','model-role'));
+    const value=textNode('div','','model-forecast');card.append(value);
+    card.append(textNode('p','Expected arrivals in the next 10 seconds','caption'));
+    card.append(textNode('p',row.description,'model-description'));
+    const errors=document.createElement('dl');errors.className='model-errors';
+    for(const [label,number] of [['MAE',row.mae],['RMSE',row.rmse]]){
+      const group=document.createElement('div');group.append(textNode('dt',label));group.append(textNode('dd',number.toFixed(4)));errors.append(group);
+    }
+    card.append(errors);cards.append(card);countTo(value,row.prediction,{decimals:2,unit:'vehicles'});
+  }
+  $('algorithm-context').textContent=`Compared for ${result.inputs.join(' → ')} arrivals (newest to oldest). Every model uses these same three inputs.`;
+  $('algorithm-verdict').textContent=`${rows.find(row=>row.mae===bestMAE).name} has the lowest test MAE; ${rows.find(row=>row.rmse===bestRMSE).name} has the lowest test RMSE. These small differences describe synthetic test data, not a guaranteed winner for your next count.`;
+}
+function renderSignalModels(result) {
+  const body=$('signal-model-results');body.replaceChildren();
+  const rows=result.model_comparison;
+  for(const row of rows){
+    const tr=document.createElement('tr');
+    for(const value of [row.name,`${row.metrics.delay_per_arrival.toFixed(2)} s`,`${row.metrics.served} / ${row.metrics.arrivals}`,row.metrics.remaining])tr.append(textNode('td',String(value)));
+    body.append(tr);
+  }
+  const best=Math.min(...rows.map(row=>row.metrics.delay_per_arrival));
+  const winners=rows.filter(row=>row.metrics.delay_per_arrival===best).map(row=>row.name).join(' and ');
+  $('signal-model-context').textContent=`${scenarioLabel(result.scenario)} · run ${result.seed} · ${result.seconds/60} minutes. Lowest waiting among these models: ${winners} (${best.toFixed(2)} s per arrival).`;
+}
+
 const predictionInputs = ['count-recent','count-previous','count-oldest'];
 let predictionRequest=0;
 predictionInputs.forEach(id => $(id).addEventListener('input', () => {
   predictionRequest++;
   $('predict-submit').disabled=false;
-  busy($('predict-submit'),false);busy(predictionOutput,false);
+  busy($('predict-submit'),false);busy(predictionOutput,false);$('algorithm-comparison').setAttribute('aria-busy','false');
   document.querySelectorAll('[data-counts]').forEach(button=>button.setAttribute('aria-pressed','false'));
-  $('predict-submit').textContent='Generate prediction →';
-  if ($('prediction-value').textContent.trim() !== '—')
-    $('prediction-status').textContent = 'Inputs changed. Generate a new prediction to update this result.';
+  $('predict-submit').textContent='Compare three models →';
+  if ($('prediction-value').textContent.trim() !== '—') {
+    $('prediction-status').textContent = 'Inputs changed. Compare again to update all three results.';
+    $('algorithm-comparison').dataset.stale='true';
+    $('algorithm-context').textContent='Inputs changed. The cards below still show your previous comparison.';
+  }
 }));
 document.querySelectorAll('[data-counts]').forEach(button => {
   button.onclick = () => {
@@ -189,12 +233,14 @@ $('predict-form').onsubmit = async event => {
     return;
   }
   button.disabled = true;
-  button.textContent = 'Running the model…';
+  button.textContent = 'Running all three…';
   busy(button,true);busy(predictionOutput,true);
+  $('algorithm-comparison').setAttribute('aria-busy','true');
   const request=++predictionRequest;
   try {
     const result = await get('/api/predict?counts=' + counts.join(','));
     if(request!==predictionRequest)return;
+    renderForecastModels(result);
     countTo($('prediction-value'),result.prediction,{decimals:2,unit:'vehicles'});
     $('prediction-description').textContent = `About ${result.rounded_prediction} ${result.rounded_prediction===1?'arrival':'arrivals'} expected during the next ${result.horizon_seconds} seconds.`;
     $('prediction-meaning').textContent = 'A decimal is normal: it is the average expectation from 60 trees, not a partial car.';
@@ -204,8 +250,10 @@ $('predict-form').onsubmit = async event => {
     const labels = ['20–30s ago','10–20s ago','Last 10s','Next 10s'];
     const max = Math.max(1,...values);
     $('prediction-bars').innerHTML = values.map((value,i) => `<div class="prediction-row"><span>${labels[i]}</span><div><i style="width:${value/max*100}%"></i></div><b>${i===3?value.toFixed(2):value}</b></div>`).join('');
-  } catch (error) { if(request===predictionRequest)$('predict-error').textContent = error.message; }
-  finally { if(request===predictionRequest){button.disabled = false; button.textContent = 'Generate prediction →';busy(button,false);busy(predictionOutput,false);} }
+  } catch (error) { if(request===predictionRequest){$('predict-error').textContent = error.message;
+    if(!$('algorithm-comparison').hidden){$('algorithm-comparison').dataset.stale='true';$('algorithm-context').textContent='Could not refresh. These cards still show the previous successful comparison.';}
+  } }
+  finally { if(request===predictionRequest){button.disabled = false; button.textContent = 'Compare three models →';busy(button,false);busy(predictionOutput,false);$('algorithm-comparison').setAttribute('aria-busy','false');} }
 };
 const slides=[
 ['Smarter signals. Less waiting.','Smart Traffic Signal Optimization Using Machine Learning and Computer Vision','Our goal: reduce accumulated waiting at a four-way intersection while responding to uneven traffic demand. This is an academic simulation prototype.'],
@@ -213,6 +261,7 @@ const slides=[
 ['A measurable project objective.','Compare fixed-time, queue-only adaptive, and ML-assisted control using identical generated traffic. Measure delay, vehicles served, and queues remaining.','The primary metric is accumulated queue-seconds divided by arrivals. We count waiting from unfinished vehicles too; departed-only averages can hide congestion.'],
 ['See → predict → decide.','Vision demonstration: image → segmentation → vehicle counts.<br>Simulation: recent arrivals → random forest forecast → priority score → signal phase.','Be explicit: the synthetic camera is a separate computer vision demonstration. The simulator uses full known queue and arrival counts, not the limited camera view.'],
 ['The model learns short-term demand.','Random forest regression · 60 trees<br>Inputs: three previous 10-second arrival counts.<br>Output: arrivals in the next 10 seconds.','Training uses 9,900 windows from 300 synthetic episodes. Testing uses 3,300 windows from 100 independent episodes. Compare MAE with persistence, which repeats the most recent count.'],
+['Three trained models, one comparison.','Random Forest · Linear Regression · Decision Tree<br>Same 9,900 training rows and 3,300 held-out examples.<br>One input runs all three forecasts.','Linear Regression has slightly lower MAE; Random Forest has slightly lower RMSE. Show the Predict arrivals tab, then compare signal waiting times on the Simulation tab. Neither metric proves a universal winner.'],
 ['A controller with clear rules.','Priority = queue + 0.7 × forecast + 0.08 × time since green.<br>10–45s green · 3s all-red transition · overdue queue priority.','The controller is heuristic, not reinforcement learning. After 90 seconds without green, a waiting approach gets priority at the next eligible decision; this is not a strict 90-second wait guarantee.'],
 ['Run the experiment.','Choose Morning rush. Run seed 42. Compare delay and throughput. Then try Balanced or Eastbound surge.','Switch to Intersection overview. Point to the signal, queue chart, and segmentation boxes. Show Model & methodology to compare queue-only with ML-assisted control. ML does not have to win every scenario.'],
 ['What the results mean.','Forecast error and traffic delay are different outcomes. Better prediction does not automatically guarantee better signal decisions.','Use the displayed results for the selected seed. The artifacts folder contains multi-seed evaluations. No real-world percentage reduction is claimed.'],

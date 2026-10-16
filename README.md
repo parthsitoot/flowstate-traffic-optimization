@@ -6,7 +6,7 @@ Repository: https://github.com/parthsitoot/flowstate-traffic-optimization
 
 **Live demo:** https://flowstate-traffic-optimization.vercel.app
 
-A complete ML course prototype: Python traffic simulation, a trained random forest arrival forecaster, classical computer vision on synthetic frames, a polished dashboard, and a nine-slide browser presentation.
+A complete ML course prototype: Python traffic simulation, a trained random forest arrival forecaster, classical computer vision on synthetic frames, a polished dashboard, and a ten-slide browser presentation.
 
 ## Code, hosting and maintenance
 
@@ -56,7 +56,7 @@ Windows activation: `.venv\Scripts\activate`. If port 8000 is occupied, close th
 - `src/model.py`: synthetic episode generation, random forest training, held-out evaluation.
 - `src/simulation.py`: vehicle queues, phase logic, fixed/reactive/ML-assisted comparisons.
 - `src/vision.py`: synthetic camera generation, pixel segmentation, connected components, PNG encoding.
-- `web/`: offline dashboard and nine-slide presentation.
+- `web/`: offline dashboard and ten-slide presentation.
 - `evaluate.py`: 30 experiments, three policies per experiment, CSV and JSON results.
 - `tests/test_project.py`: tests for conservation, deterministic arrivals, empty demand, CV counts, transitions, and forecasting.
 - `docs/`: report, beginner guide, presentation script, and viva answers.
@@ -80,7 +80,7 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Model verification
 
-`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Eighteen Python tests and nine JavaScript tests also check that the simulator passes only past arrival counts to the model.
+`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Twenty Python tests and nine JavaScript tests also check that the simulator passes only past arrival counts to the model.
 
 ## Dashboard improvements
 
@@ -93,3 +93,25 @@ The comparison chart shows all three policies. Export CSV downloads the selected
 Open **Try the Model**, enter the three most recent 10-second arrival counts, and click **Generate prediction**. `[6,6,6]` produces approximately 5.61 expected arrivals. This uses the same trained forest as the simulator. `/api/predict?counts=6,6,6` is available locally and on Vercel. Inputs outside the observed training range are flagged.
 
 If the browser cannot connect, keep `python3 app.py` running and retry. Refresh old tabs after code changes. Another computer or phone needs the deployed URL, not your laptop's localhost URL.
+
+## Compare three trained algorithms live
+
+Open **Predict arrivals**, enter three counts and choose **Compare three models**.
+One request returns real forecasts from Random Forest, Linear Regression and
+Decision Tree, along with MAE and RMSE measured on the same 3,300 held-out rows.
+The form marks previous results as stale when inputs change. All models train
+on the same 9,900 examples and are cached together per Python process.
+
+The **Simulation** tab also runs the same adaptive controller with all three
+forecasters. Its new comparison table shows waiting per arrival, cars served
+and remaining queues for identical generated traffic. The main playback and
+original three-policy queue chart still show Random Forest. **Download results**
+includes the two additional model controllers.
+
+`python3 compare_models.py` reproduces the offline algorithm comparison using
+the same `train_models()` definitions as the application. Current test MAE is
+1.7041 for Random Forest, 1.6971 for Linear Regression and 1.7219 for Decision
+Tree. Random Forest has slightly lower RMSE than Linear Regression. No universal
+winner or statistically significant superiority is claimed. Forecast errors and
+signal waiting times are separate outcomes. The browser presentation includes
+an algorithm comparison slide.

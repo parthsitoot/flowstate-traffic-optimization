@@ -1,4 +1,4 @@
-"""GET /api/predict?counts=6,6,6: run user inputs through the fitted forest."""
+"""GET /api/predict?counts=6,6,6: compare three fitted arrival forecasters."""
 from src.http_api import APIHandler
 
 class handler(APIHandler):

@@ -1,0 +1,78 @@
+{
+  "dataset": "Synthetic Poisson counts with changing arrival rates",
+  "features_newest_first": [
+    "arrivals_last_10s",
+    "arrivals_previous_10s",
+    "arrivals_previous_20_to_30s"
+  ],
+  "training_episodes": 300,
+  "training_seed": 21,
+  "training_rows": 9900,
+  "test_episodes": 100,
+  "test_seed": 722,
+  "test_rows": 3300,
+  "numpy_version": "2.4.6",
+  "sklearn_version": "1.9.1",
+  "evaluation": "Same independent episode split and features for every model. No parameter search; single test split; no statistical significance claim.",
+  "models": [
+    {
+      "model": "Random Forest",
+      "mae": 1.704131825299989,
+      "rmse": 2.2033025104239887,
+      "parameters": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_depth": 8,
+        "max_features": 1.0,
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 15,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 60,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 9,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    {
+      "model": "Linear Regression",
+      "mae": 1.697063416748474,
+      "rmse": 2.203974251507812,
+      "parameters": {
+        "copy_X": true,
+        "fit_intercept": true,
+        "n_jobs": null,
+        "positive": false,
+        "tol": 1e-06
+      }
+    },
+    {
+      "model": "Decision Tree",
+      "mae": 1.7218596893066977,
+      "rmse": 2.2321234793838953,
+      "parameters": {
+        "ccp_alpha": 0.0,
+        "criterion": "squared_error",
+        "max_depth": 8,
+        "max_features": null,
+        "max_leaf_nodes": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 15,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "random_state": 9,
+        "splitter": "best"
+      }
+    }
+  ],
+  "lowest_mae": "Linear Regression",
+  "lowest_rmse": "Random Forest",
+  "interpretation": "Random Forest is the implemented forecasting model, not a universally best algorithm. Report every comparator, including models that outperform it on a metric. Forecast errors do not establish signal waiting-time gains."
+}
