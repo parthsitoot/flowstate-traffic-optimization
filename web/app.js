@@ -3,7 +3,7 @@ const names=['North','East','South','West'];
 const get = url => FlowStateAsync.requestJSON(url);
 const {countTo,enter,busy,reduced}=FlowStateMotion;
 const predictionOutput=document.querySelector('.prediction-output');
-function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>{const active=v.dataset.view===name;v.classList.toggle('active',active);if(active)v.setAttribute('aria-current','page');else v.removeAttribute('aria-current')});$('breadcrumb').textContent=name==='dashboard'?'Simulation':name==='predict'?'Predict arrivals':name==='research'?'How it works':'Presentation';window.scrollTo(0,0);if(name==='presentation')renderSlide();enter($(name));}
+function view(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==name));document.querySelectorAll('.nav').forEach(v=>{const active=v.dataset.view===name;v.classList.toggle('active',active);if(active)v.setAttribute('aria-current','page');else v.removeAttribute('aria-current')});$('breadcrumb').textContent=name==='dashboard'?'Simulation':name==='predict'?'Predict arrivals':name==='research'?'How it works':'Presentation';window.scrollTo(0,0);if(name==='presentation')renderSlide();enter($(name));FlowStateMotion.moveNavigation();}
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>view(b.dataset.view));$('present').onclick=()=>view('presentation');
 function roundRect(c,x,y,w,h,r,color){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()}
 function drawJunction(h,transit=[]){const c=$('junction').getContext('2d');const W=760,H=460;c.clearRect(0,0,W,H);c.fillStyle='#e7eae8';c.fillRect(0,0,W,H);
@@ -186,6 +186,7 @@ function renderForecastModels(result) {
     }
     card.append(errors);cards.append(card);countTo(value,row.prediction,{decimals:2,unit:'vehicles'});
   }
+  FlowStateMotion.stagger(cards.children);
   $('algorithm-context').textContent=`Compared for ${result.inputs.join(' → ')} arrivals (newest to oldest). Every model uses these same three inputs.`;
   $('algorithm-verdict').textContent=`${rows.find(row=>row.mae===bestMAE).name} has the lowest test MAE; ${rows.find(row=>row.rmse===bestRMSE).name} has the lowest test RMSE. These small differences describe synthetic test data, not a guaranteed winner for your next count.`;
 }
@@ -199,6 +200,7 @@ function renderSignalModels(result) {
   }
   const best=Math.min(...rows.map(row=>row.metrics.delay_per_arrival));
   const winners=rows.filter(row=>row.metrics.delay_per_arrival===best).map(row=>row.name).join(' and ');
+  FlowStateMotion.stagger(body.children);
   $('signal-model-context').textContent=`${scenarioLabel(result.scenario)} · run ${result.seed} · ${result.seconds/60} minutes. Lowest waiting among these models: ${winners} (${best.toFixed(2)} s per arrival).`;
 }
 
@@ -268,5 +270,6 @@ const slides=[
 ['The next intersection.','Real video + vehicle tracking.<br>Calibrated traffic simulation and turning lanes.<br>Pedestrian phases and safety validation.<br>Evaluate on real demand patterns.','Conclude: we built a working, reproducible experimental system connecting computer vision concepts, supervised learning, and adaptive control. Field deployment is future work.']];
 function renderSlide(){const s=slides[slideIndex];$('slide').innerHTML=`<div class="number">${String(slideIndex+1).padStart(2,'0')} / FLOWSTATE</div><h1>${s[0]}</h1><div class="slide-body">${s[1]}</div><div class="notes"><b>SPEAKER NOTES</b><br>${s[2]}</div>`;enter($('slide'));$('slide-count').textContent=`${slideIndex+1} / ${slides.length}`;$('prev').disabled=slideIndex===0;$('next').disabled=slideIndex===slides.length-1}
 $('prev').onclick=()=>{slideIndex=Math.max(0,slideIndex-1);renderSlide()};$('next').onclick=()=>{slideIndex=Math.min(slides.length-1,slideIndex+1);renderSlide()};$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('presentation').requestFullscreen()}catch(e){$('connection-error').hidden=false;$('error').textContent='Fullscreen is unavailable in this browser.';view('dashboard')}};document.addEventListener('keydown',e=>{if(!$('presentation').classList.contains('hidden')){if(e.key==='ArrowRight')$('next').click();if(e.key==='ArrowLeft')$('prev').click()}});
+FlowStateMotion.setupNavigation();
 FlowStateMotion.observe();
 if (location.protocol !== 'file:') run();

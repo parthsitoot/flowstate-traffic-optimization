@@ -19,7 +19,7 @@
     if (reduced.matches || element.closest('.hidden')) { write(value); return; }
     const started=root.performance.now();
     function step(now) {
-      const progress=Math.min(1,(now-started)/650);
+      const progress=Math.min(1,(now-started)/550);
       write(startValue+(value-startValue)*(1-Math.pow(1-progress,3)));
       if(progress<1) frames.set(element,root.requestAnimationFrame(step));
       else { write(value); frames.delete(element); }
@@ -29,8 +29,37 @@
   function enter(element) {
     if(reduced.matches || !element.animate)return;
     element.getAnimations().forEach(animation=>animation.cancel());
-    element.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],
-      {duration:420,easing:'cubic-bezier(.22,1,.36,1)'});
+    element.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],
+      {duration:360,easing:'cubic-bezier(.22,1,.36,1)'});
+  }
+  function stagger(elements) {
+    if(reduced.matches)return;
+    Array.from(elements).forEach((element,index)=>{
+      if(!element.animate)return;
+      element.getAnimations().forEach(animation=>animation.cancel());
+      element.animate([{opacity:0,transform:'translateY(12px)'},{opacity:1,transform:'none'}],
+        {duration:480,delay:Math.min(index,5)*65,fill:'backwards',easing:'cubic-bezier(.22,1,.36,1)'});
+    });
+  }
+  let navigation;
+  function moveNavigation() {
+    if(!navigation)return;
+    const active=navigation.querySelector('.nav.active');
+    const indicator=navigation.querySelector('.nav-indicator');
+    if(!active || !indicator)return;
+    indicator.style.width=`${active.offsetWidth}px`;
+    indicator.style.transform=`translateX(${active.offsetLeft}px)`;
+    navigation.classList.add('nav-ready');
+  }
+  function setupNavigation() {
+    navigation=document.querySelector('nav');
+    if(!navigation)return;
+    const indicator=document.createElement('span');
+    indicator.className='nav-indicator';indicator.setAttribute('aria-hidden','true');
+    navigation.prepend(indicator);
+    moveNavigation();
+    if('ResizeObserver' in root)new root.ResizeObserver(moveNavigation).observe(navigation);
+    else root.addEventListener('resize',moveNavigation);
   }
   function busy(element, value) {
     element.classList.toggle('is-loading',value);
@@ -45,5 +74,5 @@
       element.classList.add('reveal-ready');observer.observe(element);
     });
   }
-  root.FlowStateMotion={countTo,enter,busy,observe,reduced};
+  root.FlowStateMotion={countTo,enter,stagger,setupNavigation,moveNavigation,busy,observe,reduced};
 })(globalThis);

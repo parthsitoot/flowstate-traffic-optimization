@@ -80,7 +80,7 @@ All reported improvements are simulation results. The fixed controller is a simp
 
 ## Model verification
 
-`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Twenty Python tests and nine JavaScript tests also check that the simulator passes only past arrival counts to the model.
+`verify_model.py` verifies fitted trees, sensible example predictions, three held-out baselines, and that predictions change actual signal decisions. See `artifacts/model_verification.json`. The forest MAE is 1.704 versus 1.733 for a three-window average; this improvement over a stronger baseline is modest. Forecasts are expected counts and may be fractional. Twenty Python tests and eleven JavaScript tests also check that the simulator passes only past arrival counts to the model.
 
 ## Dashboard improvements
 
@@ -115,3 +115,16 @@ Tree. Random Forest has slightly lower RMSE than Linear Regression. No universal
 winner or statistically significant superiority is claimed. Forecast errors and
 signal waiting times are separate outcomes. The browser presentation includes
 an algorithm comparison slide.
+
+## Interface refinement
+
+The interface uses an off-white background, quiet green accents, simpler result
+sections and a compact input form. All three model results appear directly
+beneath the form. The additional Random Forest history is available in an
+expandable section, rather than repeating the main result above the comparison.
+
+Navigation uses a sliding selection indicator. Model results enter in a short
+sequence, numbers settle on the exact returned value, and tab transitions use
+small fades. Reduced-motion preferences skip these effects. Animation checks
+cover rapid result updates and immediate rendering with reduced motion. The
+form and simulation layouts were checked at a 390-pixel phone width.

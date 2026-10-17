@@ -19,4 +19,4 @@ jobs:
       - run: python verify_model.py
       - run: node --check web/app.js
       - run: node --check web/motion.js
-      - run: node --test tests/frontend.test.cjs
+      - run: node --test tests/*.test.cjs
